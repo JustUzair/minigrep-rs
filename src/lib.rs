@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::fs;
+use std::{env, fs};
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     println!(
@@ -19,13 +19,19 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 }
 
 pub fn search<'i>(query: &str, contents: &'i str) -> Vec<(u32, &'i str)> {
-    let mut results: Vec<_> = Vec::new();
-    for (line_num, line) in contents.lines().enumerate() {
-        if line.to_lowercase().contains(query.to_lowercase().as_str()) {
-            results.push(((line_num + 1) as u32, line));
-        }
-    }
-    results
+    // let mut results: Vec<_> = Vec::new();
+    // for (line_num, line) in contents.lines().enumerate() {
+    //     if line.to_lowercase().contains(query.to_lowercase().as_str()) {
+    //         results.push(((line_num + 1) as u32, line));
+    //     }
+    // }
+    // results
+    contents
+        .lines()
+        .enumerate()
+        .filter(|(_, line)| line.to_lowercase().contains(query.to_lowercase().as_str()))
+        .map(|(line_num, line)| ((line_num + 1) as u32, line))
+        .collect()
 }
 
 pub struct Config {
@@ -34,12 +40,17 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(args: &[String]) -> Result<Config, &str> {
-        if args.len() < 3 {
-            return Err("Not enough arguments");
-        }
-        let query = args[1].clone();
-        let filename = args[2].clone();
+    pub fn new(mut args: env::Args) -> Result<Config, &'static str> {
+        args.next();
+        let query = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Didn't get a query string"),
+        };
+        let filename = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Didn't get a file name"),
+        };
+        // let filename = args.next().unwrap();
 
         Ok(Config { query, filename })
     }
